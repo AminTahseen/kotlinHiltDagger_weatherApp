@@ -8,6 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.example.kotlinhiltdagger_weatherapp.model.Weather
 import com.example.kotlinhiltdagger_weatherapp.repository.WeatherRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.scopes.ViewModelScoped
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -18,8 +22,17 @@ class WeatherViewModel @Inject constructor(private val weatherRepository: Weathe
    val weatherResp:LiveData<Weather>
     get() = _resp
 
+    //state flow
+    private val weatherStateFlow= MutableStateFlow(Weather())
+    val stateFlow: MutableStateFlow<Weather> get() = weatherStateFlow
+
     init {
-        getWeather()
+       // getWeather()
+        viewModelScope.launch (Dispatchers.IO){
+            weatherRepository.getWeatherFlowData().collect {
+                weatherStateFlow.value=it
+            }
+        }
     }
     private fun getWeather()=viewModelScope.launch {
         weatherRepository.getWeather().let {
@@ -29,4 +42,6 @@ class WeatherViewModel @Inject constructor(private val weatherRepository: Weathe
                 Log.d("WeatherResponseFailure","${it.message()}")
         }
     }
+
+
 }
